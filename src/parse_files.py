@@ -151,6 +151,8 @@ def get_comment_header():
     return "comment_id,status_id,parent_id,comment_message,comment_author,comment_published,num_reactions,num_likes," \
            "num_loves,num_wows,num_hahas,num_sads,num_angrys,num_special"
 
+def get_friend_header():
+    return "person,number_of_friends,friends"
 
 def load_shares(path):
     shares = []
@@ -160,6 +162,14 @@ def load_shares(path):
             shares.append(line.strip().split(","))
     return shares
 
+def load_friends(path):
+    friends = {}
+    with open(path, encoding="utf-8") as file:
+        lines = file.readlines()
+        for line in lines[1:5]:
+            line_data = line.strip().split(",")
+            friends.update({line_data[0] : line_data[2:]})
+    return friends
 
 def load_reactions(path):
     reactions = []
