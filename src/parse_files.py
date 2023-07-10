@@ -1,7 +1,6 @@
 from random import randint, random
-import datetime
+from datetime import datetime, timedelta
 import time
-
 
 
 def load_comments(path):
@@ -127,7 +126,7 @@ def modify_date_to_recent(date_str):
     days_ago.extend(_ for _ in range(0, 2))
 
     rand_num = days_ago[randint(0, len(days_ago)-1)]
-    generated_date = datetime.today() - datetime.timedelta(days=rand_num)
+    generated_date = datetime.today() - timedelta(days=rand_num)
 
     new_date = old_date.replace(year=generated_date.year, month=generated_date.month, day=generated_date.day)
     return str(new_date)
@@ -152,9 +151,7 @@ def get_comment_header():
     return "comment_id,status_id,parent_id,comment_message,comment_author,comment_published,num_reactions,num_likes," \
            "num_loves,num_wows,num_hahas,num_sads,num_angrys,num_special"
 
-def get_friend_header():
-    return "person,number_of_friends,friends"
-    
+
 def load_shares(path):
     shares = []
     with open(path, encoding="utf-8") as file:
@@ -162,6 +159,7 @@ def load_shares(path):
         for line in lines[1:]:
             shares.append(line.strip().split(","))
     return shares
+
 
 def load_reactions(path):
     reactions = []

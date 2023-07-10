@@ -7,17 +7,18 @@ import time
 
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
-FRIEND_WEIGHT: float = 500.0
-SHARE_WEIGHT: float = 25.0
-COMMENT_WEIGHT: float = 10.0
+FRIEND_OF_FRIEND_WEIGHT: float = 3000.0
+FRIEND_WEIGHT: float = 5000.0
+SHARE_WEIGHT: float = 2.0
+COMMENT_WEIGHT: float = 1.0
 REACTION_WEIGHT: dict = {
-    "angrys": 0.5,
-    "sads": 1.0,
-    "hahas": 1.5,
-    "loves": 2.0,
-    "wows": 2.5,
-    "likes": 3.0,
-    "special": 3.5
+    "angrys": 0.1,
+    "sads": 0.2,
+    "hahas": 0.3,
+    "loves": 0.4,
+    "wows": 0.5,
+    "likes": 0.6,
+    "special": 0.7
 }
 
 
@@ -47,9 +48,9 @@ def get_date_difference_multiplier(action_date) -> float:
     elif difference.days < 30:
         multiplier *= 0.6
     elif difference.days < 60:
-        multiplier *= 0.3
+        multiplier *= 0.01
     else:
-        multiplier *= 0.1
+        multiplier *= 0.001
 
     return multiplier
 
@@ -60,78 +61,65 @@ def print_graph(graph: nx.DiGraph):
         print(f"{edge[0]} -> {edge[1]} : {affinity}")
 
 
-def generate_graph(users: dict, statuses: dict, shares: dict, reactions: dict, comments: dict) -> nx.DiGraph:
-    graph: nx.DiGraph = nx.DiGraph()
+def generate_graph(users: dict, statuses: dict, shares: dict, reactions: dict, comments: dict, graph: nx.DiGraph = None) -> nx.DiGraph:
+    if graph is None:
+        graph = nx.DiGraph()
+    start = time.time()
 
+    for comment_author in comments:
+        authors_comments: list = comments[comment_author]
+        for author_comment in authors_comments:
+            status_id: str = author_comment['status_id']
+            status_author: str = statuses[status_id]['author']
+            
+            add_affinity(comment_author, status_author, COMMENT_WEIGHT * get_date_difference_multiplier(author_comment['comment_published']), graph)
+    
+    print(f"Adding comments: {time.time() - start}")
+    
+    start = time.time()
+    for reactor in reactions:
+        reactor_reactions: list = reactions[reactor]
+        for reactor_reaction in reactor_reactions:
+            status_id: str = reactor_reaction['status_id']
+            status_author: str = statuses[status_id]['author']
+            reaction_type: str = reactor_reaction['type_of_reaction']
+            
+            add_affinity(reactor, status_author, REACTION_WEIGHT[reaction_type] * get_date_difference_multiplier(reactor_reaction['reacted']), graph)
+    print(f"Adding reactions: {time.time() - start}")
+    
+    start = time.time()
+    for sharer in shares:
+        sharer_shares: list = shares[sharer]
+        for sharer_share in sharer_shares:
+            status_id: str = sharer_share['status_id']
+            status_author: str = statuses[status_id]['author']
+            
+            add_affinity(sharer, status_author, SHARE_WEIGHT * get_date_difference_multiplier(sharer_share['status_shared']), graph)
+    print(f"Adding shares: {time.time() - start}")
+    
+    start = time.time()
     for user in users:
-        for second_user in users:
-            if user == second_user:
-                continue
-
-            graph.add_node(user)
-            graph.add_node(second_user)
-
-            share_affinity: float = 0.0
-            reaction_affinity: float = 0.0
-            comment_affinity: float = 0.0
-
-            if shares.get(user) is None:
-                share_affinity = 0.0
-            else:
-                for share in shares.get(user):
-                    status_id = share['status_id']
-                    status = statuses.get(status_id)
-                    if status is not None and status['author'] == second_user:
-                        share_affinity += SHARE_WEIGHT * \
-                            get_date_difference_multiplier(
-                                share['status_shared'])
-
-            if reactions.get(user) is None:
-                reaction_affinity = 0.0
-            else:
-                for reaction in reactions.get(user):
-                    status_id = reaction['status_id']
-                    status = statuses.get(status_id)
-                    if status is not None and status['author'] == second_user:
-                        reaction_affinity += REACTION_WEIGHT[reaction['type_of_reaction']] * get_date_difference_multiplier(reaction['reacted'])
-
-            if comments.get(user) is None:
-                comment_affinity = 0.0
-            else:
-                for comment in comments.get(user):
-                    status_id = comment['status_id']
-                    status = statuses.get(status_id)
-                    if status is not None and status['author'] == second_user:
-                        comment_affinity += COMMENT_WEIGHT * \
-                            get_date_difference_multiplier(
-                                comment['comment_published'])
-
-            user_affinity: float = comment_affinity + reaction_affinity + share_affinity
-
-            if second_user in users[user]:
-                user_affinity += FRIEND_WEIGHT
-
-            if user_affinity != 0:
-                if not graph.has_edge(user, second_user):
-                    graph.add_edge(user, second_user, affinity=user_affinity)
-                else:
-                    graph[user][second_user]['affinity'] += user_affinity
-
+        friends: list = users[user]
+        for friend in friends:
+            add_affinity(user, friend, FRIEND_WEIGHT, graph)
+            # friends_of_friend: list = users[friend]
+            # for friend_of_friend in friends_of_friend:
+            #     add_affinity(user, friend_of_friend, FRIEND_OF_FRIEND_WEIGHT, graph)
+    print(f"Adding friends: {time.time() - start}")
+    
     graph_file_obj = open("graph.obj", "wb")
     pickle.dump(graph, graph_file_obj)
     graph_file_obj.close()
     return graph
 
 
-def get_graph():
+def load_graph(file):
     try:
-        graph_file_obj = open("graph.obj", "rb")
+        graph_file_obj = open(file, "rb")
         graph = pickle.load(graph_file_obj)
         graph_file_obj.close()
-        print("Found graph in file")
+        print(f"Found graph in file - {graph}")
         return graph
     except FileNotFoundError:
         print("Graph not found in file")
-
-
-
+        

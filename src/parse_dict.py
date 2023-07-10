@@ -5,7 +5,6 @@ import time
 def load_comments_dict(path):
     output_data = {}
     with open(path, encoding="utf-8") as file:
-        print("da")
         lines = file.readlines()
         comment = ""
         found_open_ellipsis = False
