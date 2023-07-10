@@ -1,3 +1,6 @@
+"""Module that generates affinity graph. It contants `DATE_FORMAT`, `FRIEND_WEIGHT`, `SHARE_WEIGHT`, `COMMENT_WEIGHT`, and `REACTION_WEIGHT` constants.
+"""
+
 import pickle
 import networkx as nx
 from datetime import datetime, timedelta
@@ -6,8 +9,6 @@ import time
 
 
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
-
-FRIEND_OF_FRIEND_WEIGHT: float = 3000.0
 FRIEND_WEIGHT: float = 5000.0
 SHARE_WEIGHT: float = 2.0
 COMMENT_WEIGHT: float = 1.0
@@ -23,6 +24,16 @@ REACTION_WEIGHT: dict = {
 
 
 def get_affinity(user: str, friend: str, graph: nx.DiGraph) -> float:
+    """Gets affinity between two users.
+
+    Args:
+        user (str): first users
+        friend (str): second users
+        graph (nx.DiGraph): affinity graph
+
+    Returns:
+        float: User affinity
+    """
     try:
         return graph.get_edge_data(user, friend)["affinity"]
     except:
@@ -30,11 +41,27 @@ def get_affinity(user: str, friend: str, graph: nx.DiGraph) -> float:
 
 
 def add_affinity(user: str, friend: str, value: float, graph: nx.DiGraph) -> None:
+    """Adds/updates user affinity.
+
+    Args:
+        user (str): first user
+        friend (str): second user
+        value (float): affinity
+        graph (nx.DiGraph): affinity graph
+    """
     current_affinity: float = get_affinity(user, friend, graph)
     graph.add_edge(user, friend, affinity=current_affinity + value)
 
 
-def get_date_difference_multiplier(action_date) -> float:
+def get_date_difference_multiplier(action_date: datetime) -> float:
+    """Gets time dependency.
+
+    Args:
+        action_date (datetime): when action is performed
+
+    Returns:
+        float: time dependency
+    """
     current_date: datetime = datetime.today()
     difference: timedelta = current_date - action_date
 
@@ -56,12 +83,30 @@ def get_date_difference_multiplier(action_date) -> float:
 
 
 def print_graph(graph: nx.DiGraph):
+    """Prints affinity graph.
+
+    Args:
+        graph (nx.DiGraph): affinity graph
+    """
     for edge in graph.edges:
         affinity: float = get_affinity(edge[0], edge[1], graph)
         print(f"{edge[0]} -> {edge[1]} : {affinity}")
 
 
 def generate_graph(users: dict, statuses: dict, shares: dict, reactions: dict, comments: dict, graph: nx.DiGraph = None) -> nx.DiGraph:
+    """Generate/updates graph.
+
+    Args:
+        users (dict): all users
+        statuses (dict): all statuses
+        shares (dict): all shares
+        reactions (dict): all reactions
+        comments (dict): all comments
+        graph (nx.DiGraph, optional): Graph to update. Defaults to None.
+
+    Returns:
+        nx.DiGraph: Generated/updated graph
+    """
     if graph is None:
         graph = nx.DiGraph()
     start = time.time()
@@ -113,7 +158,15 @@ def generate_graph(users: dict, statuses: dict, shares: dict, reactions: dict, c
     return graph
 
 
-def load_graph(file):
+def load_graph(file: str) -> nx.DiGraph:
+    """Loads graph from `file`.
+
+    Args:
+        file (str): file path
+
+    Returns:
+        nx.DiGraph: Loaded graph, None if graph is not found in file.
+    """
     try:
         graph_file_obj = open(file, "rb")
         graph = pickle.load(graph_file_obj)

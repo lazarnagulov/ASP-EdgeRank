@@ -1,7 +1,8 @@
-import pickle
 import re
 
 class Node(object):
+    """Trie node.
+    """
     def __init__(self, char: str):
         self.char = char
         self.is_end = False
@@ -10,12 +11,22 @@ class Node(object):
         self.status_ids = set()
 
 class Trie(object):
-    
+    """Trie class.
+    """    
     def __init__(self):
         self.root: Node = Node("")
         self.char_hash: dict = {}
             
     def __filter_chars(self, status: str, to_lower: bool = True) -> str:
+        """Replaces all none-letter characters with space.
+
+        Args:
+            status (str): status
+            to_lower (bool, optional): Is case insensitive. Defaults to True.
+
+        Returns:
+            str: modified status
+        """
         char_filter: str = ""
         if to_lower:
             status = status.lower()
@@ -27,6 +38,12 @@ class Trie(object):
         return char_filter.strip()
         
     def insert(self, status: str, id: str):
+        """Inserts status words into trie.
+
+        Args:
+            status (str): status
+            id (str): status id
+        """
         status: str = self.__filter_chars(status)
         words = status.split(" ")    
         
@@ -50,6 +67,14 @@ class Trie(object):
         
     
     def autocomplete(self, prefix: str) -> dict:
+        """Autocomletes word.
+
+        Args:
+            prefix (str): word prefix
+
+        Returns:
+            dict: `word` : `word count`
+        """
         prefix = self.__filter_chars(prefix)
         node: Node = self.root
     
@@ -63,6 +88,15 @@ class Trie(object):
         return words
         
     def __get_words_from_prefix(self, node: Node, prefix: str) -> list:
+        """Recursively gets all words from prefix.
+
+        Args:
+            node (Node): current node
+            prefix (str): word prefix
+
+        Returns:
+            list: list of words that start with prefix
+        """
         words = []
         
         if node.is_end:
@@ -74,6 +108,14 @@ class Trie(object):
         return words
     
     def search_words_union(self, term: str) -> dict:
+        """Search statuses with `term`. It can search for muliple terms.
+
+        Args:
+            term (str): term
+
+        Returns:
+            dict: (`status` : `word count`)
+        """
         term = self.__filter_chars(term)
         words: list = re.findall(r'\b\w+\b', term)
         status_ids: dict = {}
@@ -87,7 +129,17 @@ class Trie(object):
             
         return status_ids
     
-    def __search(self, word: str, counter: int, node: Node):
+    def __search(self, word: str, counter: int, node: Node) -> set:
+        """Recursively searches trie.
+
+        Args:
+            word (str): word
+            counter (int): word size
+            node (Node): current node
+
+        Returns:
+            set: set of statuses that have `word`
+        """
         if len(word) == counter:
             return node.status_ids
             
@@ -101,6 +153,15 @@ class Trie(object):
         return ids
 
     def has_phrase(self, status: str, phrase: str) -> bool:
+        """Checks if status have `phrase`.
+
+        Args:
+            status (str): status
+            phrase (str): phrase
+
+        Returns:
+            bool: True if status have phrase.
+        """
         status = self.__filter_chars(status)
         phrase_len: int = len(phrase)
         status_len: int = len(status)
@@ -124,7 +185,16 @@ class Trie(object):
                 k = phrase_len - 1
         return False, None
         
-    def search_phrases(self, phrase: str, statuses: dict):
+    def search_phrases(self, phrase: str, statuses: dict) -> list:
+        """Search for phrases in all `statuses`.
+
+        Args:
+            phrase (str): phrase
+            statuses (dict): all statuses
+
+        Returns:
+            list: statuses with `phrase`
+        """
         phrase = self.__filter_chars(phrase)
 
         status_ids: list = []
@@ -139,6 +209,14 @@ class Trie(object):
         return status_ids
  
     def __quary(self, term: str) -> set:
+        """Returns all statuses with `term`.
+
+        Args:
+            term (str): term
+
+        Returns:
+            set: statuses with term
+        """
         chars = "".join(self.__filter_chars(term).split(" "))        
         if len(chars) == 0:
             return set()
@@ -154,17 +232,3 @@ class Trie(object):
                 ids.update(node_id)
 
         return ids
-
-if __name__ == "__main__":
-    # trie: Trie = Trie.load("trie.obj")
-
-    trie: Trie = Trie()
-    status_dict: dict = {
-        1 : {"status_message" : "this is not is not doing great "},
-        2 : {"status_message" : "is not doing great things"},
-        3 : {"status_message" : "is totally not doing great"},
-    }
-    for status in status_dict:
-        trie.insert(status_dict[status]['status_message'], status)
-    
-    print(trie.search_phrases("is not doing great", status_dict))

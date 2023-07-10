@@ -5,6 +5,8 @@ import operator
 
 
 class Status(object):
+    """Status class that stores message and relevance.
+    """
     relevance: float = 0.0
     message: str = ""
 
@@ -14,6 +16,17 @@ class Status(object):
         self.message = f"\nMessage: {status['status_message']}\nLink: {status['status_link']}\nPublished: {status['status_published']}\nAuthor: {status['author']}"
 
 def get_feed(graph: nx.DiGraph, username: str, statuses: dict, word_count: dict = None) -> list[Status]:
+    """Gets 10 relevant statuses with formula: `affinity * popularity * time dependency` (if affinity is 0 - `popularity * time dependency`).  
+
+    Args:
+        graph (nx.DiGraph): affinity graph
+        username (str): logged user
+        statuses (dict): all statuses
+        word_count (dict, optional): Word count. Defaults to None.
+
+    Returns:
+        list[Status]: List of 10 most relevant statuses.
+    """
     try:
         user = graph[username]
     except:
